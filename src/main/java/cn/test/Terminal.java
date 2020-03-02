@@ -12,9 +12,9 @@ import java.net.UnknownHostException;
  * @version 1.0
  * @date 2020/3/2 上午9:09
  */
-public class Client extends Thread {
+public class Terminal extends Thread {
     Socket socket = null;
-    public Client(String host, int port){
+    public Terminal(String host, int port){
         try{
             socket = new Socket(host, port);
             socket.setSoTimeout(10000);
@@ -81,8 +81,8 @@ public class Client extends Thread {
     }
 
     public static void main(String[] args) {
-        Client client = new Client("127.0.0.1", 1234);
-        client.start();
+        Terminal terminal = new Terminal("127.0.0.1", 1234);
+        terminal.start();
     }
 
 }

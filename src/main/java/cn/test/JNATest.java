@@ -26,9 +26,9 @@ public class JNATest {
                 "abacadae", "98541BDA41CA",
                 reqID, 0x3D, 2, mycall, 3);
         System.out.println("num: " + num);
-        System.out.print("reqID:");
-        for (int i = 0; i < reqID.length; i++) {
-            System.out.println((char)reqID[i]);
-        }
+//        System.out.print("reqID:");
+//        for (int i = 0; i < reqID.length; i++) {
+//            System.out.println((char)reqID[i]);
+//        }
     }
 }

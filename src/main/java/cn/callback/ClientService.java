@@ -121,7 +121,7 @@ public class ClientService extends Thread {
                 resultResp.setTrans_code(Constants.RESULT_CODE);
                 System.out.println("开始发送结果...");
                 new SendRespThread(resultResp).start();
-                //发送reqID给QuerySerivce, 在queryService中调用getInfo的so库完成结果的返回
+                //到这一步reqID已经有数据,接下来发送reqID给QuerySerivce, 在queryService中调用getInfo的so库完成结果的返回
                 //TODO
 
 

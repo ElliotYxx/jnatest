@@ -21,9 +21,9 @@ public class QueryService {
     byte[] picture = new byte[100000];
     byte[] ip = "118.145.9.208:80".getBytes();
 
-    JLRC lib = (JLRC) Native.loadLibrary("query", JLRC.class);
+
     public void getInfo(byte[] reqID){
-        int ret = lib.getInfo(cid, app_id, appKey, reqID, "jWEeQkfogZSJvrS2iDZ".getBytes(), info,
+        int ret = JLRC.INSTANCE.getInfo(cid, app_id, appKey, reqID, "jWEeQkfogZSJvrS2iDZ".getBytes(), info,
                 picture, dn, appeidcode, errMsg,
                 2, ip);
 

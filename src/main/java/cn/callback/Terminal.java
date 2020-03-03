@@ -19,7 +19,6 @@ public class Terminal {
             System.out.println("接收到读卡命令....");
             return "00014845010807100000000000067777eed1e76e59eb123456420f9a520b8c269000";
         }else{
-            //callback.readCard("abacadae", "98541BDA41CA", resp);
             return "9000";
         }
     }

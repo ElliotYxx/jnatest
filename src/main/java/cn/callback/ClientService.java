@@ -13,20 +13,17 @@ public class ClientService {
 
 
     public static void main(String[] args) {
-        //门锁收到解码请求
-        //导入so库
-        final Terminal terminal = new Terminal();
-        LgetLib INSTANCE = (LgetLib) Native.loadLibrary("eid", LgetLib.class);
-        MyCallback callback = new MyCallback() {
-            public String readCard(String fid, String tidid, String resp) {
-                return terminal.getIdInfo(resp);
-            }
-        };
-
         byte[] reqID = new byte[35];
-        int result = INSTANCE.JLRCs("1235678",
+        final Terminal terminal = new Terminal();
+        //门锁收到解码请求,调用so库返回结果码
+        int result = LgetLib.INSTANCE.JLRCs("1235678",
                 "abacadae", "98541BDA41CA",
-                reqID, 0x3D, 2, callback, 3);
+                reqID, 0x3D, 2, new MyCallback() {
+                    public String readCard(String fid, String tidid, String resp) {
+                        //读卡命令发送给门锁端
+                        return terminal.getIdInfo(resp);
+                    }
+                }, 3);
         //返回结果给终端
         terminal.getResult(result);
         QueryService queryService = new QueryService();

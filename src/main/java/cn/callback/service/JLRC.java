@@ -1,6 +1,7 @@
 package cn.callback.service;
 
 import com.sun.jna.Library;
+import com.sun.jna.Native;
 
 /**
  * @author Sheva
@@ -8,6 +9,7 @@ import com.sun.jna.Library;
  * @date 2020/3/2 下午11:13
  */
 public interface JLRC extends Library {
+    JLRC INSTANCE = (JLRC) Native.loadLibrary("query", JLRC.class);
     /**
      * 库函数声明
      * @param cid

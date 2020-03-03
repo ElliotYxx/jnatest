@@ -1,9 +1,6 @@
 package cn.callback;
-
 import cn.callback.service.LgetLib;
 import cn.callback.service.MyCallback;
-import com.sun.jna.Native;
-
 /**
  * @author Sheva
  * @version 1.0
@@ -20,7 +17,7 @@ public class ClientService {
                 "abacadae", "98541BDA41CA",
                 reqID, 0x3D, 2, new MyCallback() {
                     public String readCard(String fid, String tidid, String resp) {
-                        //读卡命令发送给门锁端
+                        //读卡命令发送给门锁端(resp为调用so库生成的读卡命令)
                         return terminal.getIdInfo(resp);
                     }
                 }, 3);

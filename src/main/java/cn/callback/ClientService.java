@@ -8,7 +8,6 @@ import com.alibaba.fastjson.JSONObject;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.SQLOutput;
 
 /**
  * @author Sheva
@@ -18,8 +17,9 @@ import java.sql.SQLOutput;
  */
 public class ClientService extends Thread {
 
-    private String cid = "1421800";
+    private String cid = "1134150";
     byte[] reqID = new byte[35];
+
 
     private InputStreamReader isr;
     private BufferedReader br;
@@ -50,8 +50,6 @@ public class ClientService extends Thread {
         }
     }
 
-
-
     //读取终端发送到平台的信息
     @Override
     public void run() {
@@ -77,16 +75,19 @@ public class ClientService extends Thread {
             readCardResp.setTimestamp(timestamp);
             readCardResp.setSeq(seq);
             readCardResp.setRsp_code("1");
+            //String per_data = null;
             if ((Constants.DECODE_REQ).equals(trans_code)){
                 readCardResp.setTrans_code(Constants.PLAT_TER);
                 //接收到解码请求，调用so库
-                int result = LgetLib.INSTANCE.JLRCs(cid, socket.getInetAddress().toString(), "98541BDA41CA",
+                int result = LgetLib.INSTANCE.JLRCs(cid, "abacadae", "98541BDA41CA",
                         reqID, 0x3D, 2, new MyCallback() {
                             public String readCard(String fid, String tidid, String resp) {
                                 //设置读卡命令
                                 System.out.println("此次生成的读卡命令为：　" + resp);
                                 readCardResp.setRsp_data(resp);
                                 //发送读卡命令
+                                System.out.println("发送读卡命令...");
+                                System.out.println("此次发送的命令为： " + readCardResp.getRsp_data());
                                 new SendRespThread(readCardResp).start();
                                 //接收读卡数据
                                 try{
@@ -115,45 +116,38 @@ public class ClientService extends Thread {
                                 return null;
                             }
                         }, 3);
+                System.out.println("最终的结果为: " + result);
                 resultResp.setRsp_data(String.valueOf(result));
                 resultResp.setTrans_code(Constants.RESULT_CODE);
-                new SendRespThread(resultResp);
-                osw.close();
-                bw.close();
+                System.out.println("开始发送结果...");
+                new SendRespThread(resultResp).start();
 
             }else{
                 System.out.println("解码请求错误...");
-                System.out.println("关闭连接...");
-                socket.close();
             }
         }catch (Exception e){
             e.printStackTrace();
         }
+
     }
 
     class  SendRespThread extends Thread{
         private Response response;
-        SendRespThread(Response readCardResp){
-            response = readCardResp;
+        SendRespThread(Response response){
+            this.response = response;
         }
-
         @Override
         public void run() {
             try{
                 osw = new OutputStreamWriter(socket.getOutputStream());
                 bw = new BufferedWriter(osw);
                 //类型转换
-                String data = JSON.toJSONString(readCardResp);
-                System.out.println("发送读卡命令...");
+                String data = JSON.toJSONString(response);
                 bw.write(data + "\n");
                 bw.flush();
             }catch (Exception e){
-                System.out.println("发送读卡命令错误....");
-                try{
-                    socket.close();
-                }catch (IOException ioe){
-                    e.printStackTrace();
-                }
+                System.out.println("发送命令错误....");
+                e.printStackTrace();
             }
         }
     }

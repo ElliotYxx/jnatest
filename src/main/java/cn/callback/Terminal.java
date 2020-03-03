@@ -16,6 +16,7 @@ import java.sql.Timestamp;
  * 终端设备
  */
 public class Terminal extends Thread {
+    private Boolean flag = true;
     private InputStreamReader isr;
     private BufferedReader br;
     private OutputStreamWriter osw;
@@ -45,30 +46,35 @@ public class Terminal extends Thread {
             //发送解码请求
             new SendDecodeThread().start();
             //接收平台传过来的数据
-            isr = new InputStreamReader(socket.getInputStream());
-            br = new BufferedReader(isr);
-            String str = br.readLine();
-            JSONObject object = JSONObject.parseObject(str);
+            while(flag){
+                isr = new InputStreamReader(socket.getInputStream());
+                br = new BufferedReader(isr);
+                String str = br.readLine();
+                JSONObject object = JSONObject.parseObject(str);
 
-            System.out.println("终端接收到的读卡命令参数：");
-            //获取传递过来的参数
-            String sn = object.getString("sn");
-            String timestamp = object.getString("timestamp");
-            String trans_code = object.getString("trans_code");
-            int seq = object.getInteger("seq");
-            System.out.println("sn: " + sn + "  timestamp: " + timestamp + "  tans_code: " + trans_code + "  seq: " + seq);
-            Request cardInfoReq = new Request();
-            cardInfoReq.setSn(sn);
-            cardInfoReq.setSeq(seq + 1);
-            cardInfoReq.setTimestamp(timestamp);
-            cardInfoReq.setTrans_code(Constants.TER_PLAT);
-            System.out.println("此次接收到的命令是：　" + object.getString("rsp_data"));
-            if (("80B0000020").equals(object.getString("rsp_data"))){
-                cardInfoReq.setReq_data(Constants.CARD_INFO_TEST);
-            }else{
-                cardInfoReq.setReq_data("9000");
+                System.out.println("终端接收到的读卡命令参数：");
+                //获取传递过来的参数
+                String sn = object.getString("sn");
+                String timestamp = object.getString("timestamp");
+                String trans_code = object.getString("trans_code");
+                int seq = object.getInteger("seq");
+                System.out.println("sn: " + sn + "  timestamp: " + timestamp + "  tans_code: " + trans_code + "  seq: " + seq);
+                Request cardInfoReq = new Request();
+                cardInfoReq.setSn(sn);
+                cardInfoReq.setSeq(seq + 1);
+                cardInfoReq.setTimestamp(timestamp);
+                System.out.println("此次接收到的命令是：　" + object.getString("rsp_data"));
+                if (("80B0000020").equals(object.getString("rsp_data"))){
+                    System.out.println("开始设置身份证数据....");
+                    cardInfoReq.setReq_data(Constants.CARD_INFO_TEST);
+                    flag = false;
+                }else{
+                    cardInfoReq.setReq_data("9000");
+                }
+                cardInfoReq.setTrans_code(Constants.TER_PLAT);
+                new SendReqThread(cardInfoReq).start();
             }
-            new SendReqThread(cardInfoReq).start();
+
             new GetResultThread().start();
 
         }catch (Exception e){
@@ -87,7 +93,7 @@ public class Terminal extends Thread {
                 String data = JSON.toJSONString(request);
                 bw.write(data + "\n");
                 bw.flush();
-                new GetResultThread().start();
+
             }catch (Exception e){
                 System.out.println("发送身份证信息错误...");
                 e.printStackTrace();
@@ -105,7 +111,6 @@ public class Terminal extends Thread {
                 Thread.sleep(5000);
                 String str = br.readLine();
                 JSONObject object = JSONObject.parseObject(str);
-
                 //获取传输的数据
                 System.out.println("终端获取的最终结果： ");
                 System.out.println("sn: " + object.getString("sn"));
@@ -133,7 +138,7 @@ public class Terminal extends Thread {
                 //注入sn
                 decodeRequest.setSn("123456789");
                 //注入时间戳
-                decodeRequest.setTimestamp("20200203");
+                decodeRequest.setTimestamp(new Timestamp(System.currentTimeMillis()).toString());
                 //注入业务类型
                 decodeRequest.setTrans_code(Constants.DECODE_REQ);
                 //注入指令序列

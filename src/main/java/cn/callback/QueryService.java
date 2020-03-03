@@ -12,8 +12,8 @@ import sun.misc.BASE64Encoder;
 public class QueryService {
 
     byte[] cid = "1190707".getBytes();
-    byte[] app_id = "B1R7gJTeiC87k2MU5TJk".getBytes();
-    byte[] appKey = "25BEE6EDB&63AF512345852A8342D5A1".getBytes();
+    byte[] app_id = "TESTID20200224170526".getBytes();
+    byte[] appKey = "77baa0434be6b8af8123568".getBytes();
     byte[] errMsg = new byte[50];
     byte[] dn = new byte[35];
     byte[] appeidcode = new byte[50];

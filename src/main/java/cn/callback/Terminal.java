@@ -174,21 +174,6 @@ public class Terminal extends Thread {
         terminal.start();
     }
 
-//    public String getIdInfo(String resp){
-//        System.out.println("本次接收到的请求为： " + resp);
-//        //80B0000020应该是读卡命令
-//        if (resp.equals("80B0000020")){
-//            System.out.println("接收到读卡命令....");
-//            //返回身份信息
-//            return "00014845010807100000000000067777eed1e76e59eb123456420f9a520b8c269000";
-//        }else{
-//            //应该是读取错误的信息
-//            return "9000";
-//        }
-//    }
-//    public void getResult(int result){
-//        System.out.println("门锁服务返回的结果是： " + result);
-//    }
 }
 
 

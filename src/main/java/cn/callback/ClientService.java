@@ -1,6 +1,7 @@
 package cn.callback;
 import cn.callback.constant.Constants;
 import cn.callback.pojo.Response;
+import cn.callback.pojo.ResponseBody;
 import cn.callback.service.LgetLib;
 import cn.callback.service.MyCallback;
 import com.alibaba.fastjson.JSON;
@@ -8,6 +9,9 @@ import com.alibaba.fastjson.JSONObject;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 
 /**
  * @author Sheva
@@ -17,7 +21,7 @@ import java.net.Socket;
  */
 public class ClientService extends Thread {
 
-    private String cid = "1134150";
+    private String cid = "1421800";
     byte[] reqID = new byte[35];
 
 
@@ -67,27 +71,29 @@ public class ClientService extends Thread {
             //获取传递过来的数据
             String sn = object.getString("sn");
             String timestamp = object.getString("timestamp");
-            String trans_code = object.getString("trans_code");
+            String trans_code = object.getJSONObject("body").getString("trans_code");
 
-            int seq = object.getInteger("seq");
-            System.out.println("sn: " + sn + "  timestamp: " + timestamp + "  tans_code: " + trans_code + "  seq: " + seq);
+            int seq = object.getJSONObject("body").getInteger("seq");
+            System.out.println("sn: " + sn + "  timestamp: " + timestamp + "  trans_code: " + trans_code + "  seq: " + seq);
+            final ResponseBody body=new ResponseBody();
             readCardResp.setSn(sn);
             readCardResp.setTimestamp(timestamp);
-            readCardResp.setSeq(seq);
+            body.setSeq(seq);
             readCardResp.setRsp_code("1");
             //String per_data = null;
             if ((Constants.DECODE_REQ).equals(trans_code)){
-                readCardResp.setTrans_code(Constants.PLAT_TER);
+                body.setTrans_code(Constants.PLAT_TER);
                 //接收到解码请求，调用so库
                 int result = LgetLib.INSTANCE.JLRCs(cid, "abacadae", "98541BDA41CA",
                         reqID, 0x3D, 2, new MyCallback() {
                             public String readCard(String fid, String tidid, String resp) {
                                 //设置读卡命令
                                 System.out.println("此次生成的读卡命令为：　" + resp);
-                                readCardResp.setRsp_data(resp);
+                                body.setRsp_data(resp);
+                                readCardResp.setBody(body);
                                 //发送读卡命令
                                 System.out.println("发送读卡命令...");
-                                System.out.println("此次发送的命令为： " + readCardResp.getRsp_data());
+                                System.out.println("此次发送的命令为： " + readCardResp.getBody().getRsp_data());
                                 new SendRespThread(readCardResp).start();
                                 //接收读卡数据
                                 try{
@@ -99,15 +105,17 @@ public class ClientService extends Thread {
                                     //获取传递过来的数据
                                     String sn = object.getString("sn");
                                     String timestamp = object.getString("timestamp");
-                                    String trans_code = object.getString("trans_code");
-                                    int seq = object.getInteger("seq");
-                                    String req_data = object.getString("req_data");
+                                    String trans_code = object.getJSONObject("body").getString("trans_code");
+                                    int seq = object.getJSONObject("body").getInteger("seq");
+                                    String req_data = object.getJSONObject("body").getString("req_data");
                                     System.out.println("终端返回的读卡数据: ");
                                     System.out.println("sn: " + sn + "  timestamp: " + timestamp + "  trans_code: " + trans_code + "  seq: " + seq + "  req_data(身份证数据): " + req_data);
-                                    resultResp.setSeq(seq);
+                                    ResponseBody b=new ResponseBody();
+                                    b.setSeq(seq);
                                     resultResp.setSn(sn);
-                                    resultResp.setTrans_code(trans_code);
+                                    b.setTrans_code(trans_code);
                                     resultResp.setTimestamp(timestamp);
+                                    resultResp.setBody(b);
                                     return req_data;
                                 }catch (Exception e){
                                     System.out.println("终端返回身份数据失败...");
@@ -116,16 +124,20 @@ public class ClientService extends Thread {
                                 return null;
                             }
                         }, 3);
+
+
                 System.out.println("最终的结果为: " + result);
-                resultResp.setRsp_data(String.valueOf(result));
-                resultResp.setTrans_code(Constants.RESULT_CODE);
+                body.setRsp_data(String.valueOf(result));
+                body.setTrans_code(Constants.RESULT_CODE);
                 System.out.println("开始发送结果...");
+                resultResp.setBody(body);
                 new SendRespThread(resultResp).start();
                 //到这一步reqID已经有数据,接下来发送reqID给QuerySerivce, 在queryService中调用getInfo的so库完成结果的返回
-                //TODO
-
-
-
+                System.out.println("reqID: ");
+                for (int i = 0; i < reqID.length; i++) {
+                    System.out.println((char) reqID[i]);
+                }
+                new SendReqIDThread(reqID.toString()).start();
             }else{
                 System.out.println("解码请求错误...");
             }
@@ -133,6 +145,42 @@ public class ClientService extends Thread {
             e.printStackTrace();
         }
 
+    }
+    class SendReqIDThread extends Thread{
+        private String reqID;
+        public SendReqIDThread(String reqID){
+            this.reqID = reqID;
+        }
+        @Override
+        public void run() {
+            Socket socket = null;
+
+            try {
+                socket=new Socket("127.0.0.1",2345);
+                socket.setSoTimeout(5000);
+
+                osw = new OutputStreamWriter(socket.getOutputStream());
+                bw = new BufferedWriter(osw);
+
+                System.out.println("向服务端发送reqID...");
+                char[] req = getChars(reqID.getBytes());
+                //System.out.println("char reqid" + req);
+
+                bw.write(req + "\n");
+                bw.flush();
+            }catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+    public static char[] getChars(byte[] bytes)
+    {
+        Charset cs=Charset.forName("utf8");
+        ByteBuffer bb=ByteBuffer.allocate(bytes.length);
+        bb.put(bytes).flip();
+        CharBuffer cb=cs.decode(bb);
+        return cb.array();
     }
 
     class  SendRespThread extends Thread{

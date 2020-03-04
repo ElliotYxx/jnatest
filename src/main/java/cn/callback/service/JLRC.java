@@ -9,7 +9,7 @@ import com.sun.jna.Native;
  * @date 2020/3/2 下午11:13
  */
 public interface JLRC extends Library {
-    JLRC INSTANCE = (JLRC) Native.loadLibrary("query", JLRC.class);
+    JLRC INSTANCE = (JLRC) Native.loadLibrary("query_V2.1.1", JLRC.class);
     /**
      * 库函数声明
      * @param cid

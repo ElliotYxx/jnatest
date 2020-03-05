@@ -53,29 +53,6 @@ public class ClientService extends Thread {
             e.printStackTrace();
         }
     }
-//    public static String hexStringToString(String s) {
-//        if (s == null || s.equals("")) {
-//            return null;
-//        }
-//        s = s.replace(" ", "");
-//        byte[] baKeyword = new byte[s.length() / 2];
-//        for (int i = 0; i < baKeyword.length; i++) {
-//            try {
-//                baKeyword[i] = (byte) (0xff & Integer.parseInt(
-//                        s.substring(i * 2, i * 2 + 2), 16));
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        try {
-//            s = new String(baKeyword, "gbk");
-//            new String();
-//        } catch (Exception e1) {
-//            e1.printStackTrace();
-//        }
-//        return s;
-//    }
-
 
     //读取终端发送到平台的信息
     @Override
@@ -110,9 +87,9 @@ public class ClientService extends Thread {
                 int result = LgetLib.INSTANCE.JLRCs(cid, "abacadae", "98541BDA41CA",
                         reqID, 0x3D, 2, new MyCallback() {
                             public String readCard(String fid, String tidid, String resp) {
-                                if (resp.equals("050000") || resp.equals("1d0000000000080108")) {
-                                    return "9000";
-                                }
+//                                if (resp.equals("050000") || resp.equals("1d0000000000080108")) {
+//                                    return "9000";
+//                                }
                                 //设置读卡命令
                                 System.out.println("此次生成的读卡命令为：　" + resp);
                                 body.setRsp_data(resp);
@@ -153,17 +130,29 @@ public class ClientService extends Thread {
 
 
                 System.out.println("最终的结果为: " + result);
+                if (result < 0){
+                    resultResp.setRsp_code(String.valueOf(result));
+                    resultResp.setRsp_msg("读卡失败");
+                    body.setTrans_code(Constants.RESULT_CODE);
+                    System.out.println("开始发送结果...");
+                    resultResp.setBody(body);
+                    new SendRespThread(resultResp).start();
+                }else{
+                    resultResp.setRsp_code("1");
+                    body.setTrans_code(Constants.RESULT_CODE);
+                    body.setRsp_data(String.valueOf(result));
+                    System.out.println("开始发送结果...");
+                    resultResp.setBody(body);
+                    new SendRespThread(resultResp).start();
+                }
                 body.setRsp_data(String.valueOf(result));
-                body.setTrans_code(Constants.RESULT_CODE);
-                System.out.println("开始发送结果...");
-                resultResp.setBody(body);
-                new SendRespThread(resultResp).start();
+
                 //到这一步reqID已经有数据,接下来发送reqID给QuerySerivce, 在queryService中调用getInfo的so库完成结果的返回
                 System.out.println("reqID: ");
                 for (int i = 0; i < reqID.length; i++) {
                     System.out.println((char) reqID[i]);
                 }
-                new SendReqIDThread(reqID.toString()).start();
+                new SendReqIDThread(reqID).start();
             }else{
                 System.out.println("解码请求错误...");
             }
@@ -173,8 +162,9 @@ public class ClientService extends Thread {
 
     }
     class SendReqIDThread extends Thread{
-        private String reqID;
-        public SendReqIDThread(String reqID){
+        private byte[] reqID;
+        private DataOutputStream dos;
+        public SendReqIDThread(byte[] reqID){
             this.reqID = reqID;
         }
         @Override
@@ -184,15 +174,14 @@ public class ClientService extends Thread {
                 socket=new Socket("127.0.0.11",2345);
                 socket.setSoTimeout(5000);
 
-                osw = new OutputStreamWriter(socket.getOutputStream());
-                bw = new BufferedWriter(osw);
+                dos = new DataOutputStream(socket.getOutputStream());
 
                 System.out.println("向服务端发送reqID...");
-                char[] req = getChars(reqID.getBytes());
+                //char[] req = getChars(reqID.getBytes());
                 //System.out.println("char reqid" + req);
 
-                bw.write(req + "\n");
-                bw.flush();
+                dos.write(reqID);
+                dos.flush();
                 osw.close();
                 bw.close();
                 isr.close();
@@ -204,14 +193,14 @@ public class ClientService extends Thread {
             }
         }
     }
-    public static char[] getChars(byte[] bytes)
-    {
-        Charset cs=Charset.forName("utf8");
-        ByteBuffer bb=ByteBuffer.allocate(bytes.length);
-        bb.put(bytes).flip();
-        CharBuffer cb=cs.decode(bb);
-        return cb.array();
-    }
+//    public static char[] getChars(byte[] bytes)
+//    {
+//        Charset cs=Charset.forName("utf8");
+//        ByteBuffer bb=ByteBuffer.allocate(bytes.length);
+//        bb.put(bytes).flip();
+//        CharBuffer cb=cs.decode(bb);
+//        return cb.array();
+//    }
 
     class  SendRespThread extends Thread{
         private Response response;
@@ -226,7 +215,7 @@ public class ClientService extends Thread {
                 //类型转换
                 String data = JSON.toJSONString(response);
                 System.out.println("发送读卡命令...");
-                System.out.println("发送读卡命令的body: " + response.getBody().toString());
+                //System.out.println("发送读卡命令的body: " + response.getBody().toString());
                 System.out.println("此次发送的命令为： " + response.getBody().getRsp_data());
                 bw.write(data + "\n");
                 bw.flush();

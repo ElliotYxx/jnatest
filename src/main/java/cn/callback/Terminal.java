@@ -170,7 +170,7 @@ public class Terminal extends Thread {
     }
 
     public static void main(String[] args) {
-        Terminal terminal = new Terminal("127.0.0.12", 1234);
+        Terminal terminal = new Terminal("127.0.0.1", 1234);
         terminal.start();
     }
 

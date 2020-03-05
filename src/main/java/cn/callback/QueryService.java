@@ -27,7 +27,7 @@ public class QueryService extends Thread{
     byte[] appeidcode = new byte[50];
     byte[] info = new byte[500];
     byte[] picture = new byte[100000];
-    byte[] ip = "118.145.9.208:80".getBytes();
+    byte[] ip = "testnidocr.eidlink.com:8080".getBytes();
 
     Socket socket;
     ServerSocket serverSocket;
@@ -48,7 +48,7 @@ public class QueryService extends Thread{
     }
 
     public static void main(String[] args) {
-        QueryService queryService=new QueryService(2345);
+        QueryService queryService = new QueryService(2345);
         queryService.start();
     }
 
@@ -63,37 +63,31 @@ public class QueryService extends Thread{
             isr = new InputStreamReader(socket.getInputStream());
             br = new BufferedReader(isr);
             //接收平台数据
-            String str = br.readLine();
-            System.out.println("str:" + str);
+            String reqID = br.readLine();
+            //System.out.println("str:" + str);
             //把reqid发送给getinfo处理
-            getInfo(str.getBytes());
+            int ret = JLRC.INSTANCE.getInfo(cid, app_id, appKey, reqID.getBytes(), "jWEeQkfogZSJvrS2iDZ".getBytes(), info,
+                    picture, dn, appeidcode, errMsg,
+                    2, ip);
+            BASE64Encoder enc = new BASE64Encoder();
+            String errStr = enc.encode(errMsg);
+            String dnStr = enc.encode(dn);
+            String appeidcodeStr = enc.encode(appeidcode);
+            String infoStr = enc.encode(info);
+            String picStr = enc.encode(picture);
+
+            System.out.println("ret: " + ret);
+            System.out.println("errMsg： " + errStr);
+            System.out.println("dn: " + dnStr);
+            System.out.println("appeidcode: " + appeidcodeStr);
+            System.out.println("info: " + infoStr);
+            System.out.println("picture: " + picStr);
+            isr.close();
+            br.close();
+            socket.close();
         }catch (Exception e)
         {
             e.printStackTrace();
         }
     }
-
-    public void getInfo(byte[] reqID){
-        int ret = JLRC.INSTANCE.getInfo(cid, app_id, appKey, reqID, "jWEeQkfogZSJvrS2iDZ".getBytes(), info,
-                picture, dn, appeidcode, errMsg,
-                2, ip);
-
-        BASE64Encoder enc = new BASE64Encoder();
-        String errStr = enc.encode(errMsg);
-        String dnStr = enc.encode(dn);
-        String appeidcodeStr = enc.encode(appeidcode);
-        String infoStr = enc.encode(info);
-        String picStr = enc.encode(picture);
-
-        System.out.println("ret: " + ret);
-        System.out.println("errMsg： " + errStr);
-        System.out.println("dn: " + dnStr);
-        System.out.println("appeidcode: " + appeidcodeStr);
-        System.out.println("info: " + infoStr);
-        System.out.println("picture: " + picStr);
-
-
-    }
-
-
 }

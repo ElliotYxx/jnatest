@@ -48,11 +48,34 @@ public class ClientService extends Thread {
     public ClientService(int port){
         try{
             serverSocket = new ServerSocket(port);
-            serverSocket.setSoTimeout(10000);
+            serverSocket.setSoTimeout(100000000);
         }catch (Exception e){
             e.printStackTrace();
         }
     }
+//    public static String hexStringToString(String s) {
+//        if (s == null || s.equals("")) {
+//            return null;
+//        }
+//        s = s.replace(" ", "");
+//        byte[] baKeyword = new byte[s.length() / 2];
+//        for (int i = 0; i < baKeyword.length; i++) {
+//            try {
+//                baKeyword[i] = (byte) (0xff & Integer.parseInt(
+//                        s.substring(i * 2, i * 2 + 2), 16));
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        try {
+//            s = new String(baKeyword, "gbk");
+//            new String();
+//        } catch (Exception e1) {
+//            e1.printStackTrace();
+//        }
+//        return s;
+//    }
+
 
     //读取终端发送到平台的信息
     @Override
@@ -67,15 +90,15 @@ public class ClientService extends Thread {
             br = new BufferedReader(isr);
             //接收数据
             String str = br.readLine();
+            System.out.println("接收到的解码请求数据：　" + str);
             JSONObject object = JSONObject.parseObject(str);
             //获取传递过来的数据
             String sn = object.getString("sn");
             String timestamp = object.getString("timestamp");
             String trans_code = object.getJSONObject("body").getString("trans_code");
-
             int seq = object.getJSONObject("body").getInteger("seq");
             System.out.println("sn: " + sn + "  timestamp: " + timestamp + "  trans_code: " + trans_code + "  seq: " + seq);
-            final ResponseBody body=new ResponseBody();
+            final ResponseBody body = new ResponseBody();
             readCardResp.setSn(sn);
             readCardResp.setTimestamp(timestamp);
             body.setSeq(seq);
@@ -87,13 +110,15 @@ public class ClientService extends Thread {
                 int result = LgetLib.INSTANCE.JLRCs(cid, "abacadae", "98541BDA41CA",
                         reqID, 0x3D, 2, new MyCallback() {
                             public String readCard(String fid, String tidid, String resp) {
+                                if (resp.equals("050000") || resp.equals("1d0000000000080108")) {
+                                    return "9000";
+                                }
                                 //设置读卡命令
                                 System.out.println("此次生成的读卡命令为：　" + resp);
                                 body.setRsp_data(resp);
+                                body.setTrans_code(Constants.PLAT_TER);
                                 readCardResp.setBody(body);
                                 //发送读卡命令
-                                System.out.println("发送读卡命令...");
-                                System.out.println("此次发送的命令为： " + readCardResp.getBody().getRsp_data());
                                 new SendRespThread(readCardResp).start();
                                 //接收读卡数据
                                 try{
@@ -102,6 +127,7 @@ public class ClientService extends Thread {
                                     //返还数据
                                     String str = br.readLine();
                                     JSONObject object = JSONObject.parseObject(str);
+                                    System.out.println("接收读卡数据str: " + str);
                                     //获取传递过来的数据
                                     String sn = object.getString("sn");
                                     String timestamp = object.getString("timestamp");
@@ -110,12 +136,12 @@ public class ClientService extends Thread {
                                     String req_data = object.getJSONObject("body").getString("req_data");
                                     System.out.println("终端返回的读卡数据: ");
                                     System.out.println("sn: " + sn + "  timestamp: " + timestamp + "  trans_code: " + trans_code + "  seq: " + seq + "  req_data(身份证数据): " + req_data);
-                                    ResponseBody b=new ResponseBody();
-                                    b.setSeq(seq);
+                                    body.setSeq(seq);
                                     resultResp.setSn(sn);
-                                    b.setTrans_code(trans_code);
+                                    body.setTrans_code(trans_code);
                                     resultResp.setTimestamp(timestamp);
-                                    resultResp.setBody(b);
+                                    resultResp.setBody(body);
+//                                    return "9000";
                                     return req_data;
                                 }catch (Exception e){
                                     System.out.println("终端返回身份数据失败...");
@@ -154,9 +180,8 @@ public class ClientService extends Thread {
         @Override
         public void run() {
             Socket socket = null;
-
             try {
-                socket=new Socket("127.0.0.1",2345);
+                socket=new Socket("127.0.0.11",2345);
                 socket.setSoTimeout(5000);
 
                 osw = new OutputStreamWriter(socket.getOutputStream());
@@ -168,6 +193,11 @@ public class ClientService extends Thread {
 
                 bw.write(req + "\n");
                 bw.flush();
+                osw.close();
+                bw.close();
+                isr.close();
+                br.close();
+                socket.close();
             }catch (Exception e)
             {
                 e.printStackTrace();
@@ -195,6 +225,9 @@ public class ClientService extends Thread {
                 bw = new BufferedWriter(osw);
                 //类型转换
                 String data = JSON.toJSONString(response);
+                System.out.println("发送读卡命令...");
+                System.out.println("发送读卡命令的body: " + response.getBody().toString());
+                System.out.println("此次发送的命令为： " + response.getBody().getRsp_data());
                 bw.write(data + "\n");
                 bw.flush();
             }catch (Exception e){

@@ -31,4 +31,13 @@ public class ResponseBody {
      * 指令序列，初始值为1， 每次请求提交到平台值加1
      */
     private Integer seq;
+
+    @Override
+    public String toString() {
+        return "ResponseBody{" +
+                "trans_code='" + trans_code + '\'' +
+                ", rsp_data='" + rsp_data + '\'' +
+                ", seq=" + seq +
+                '}';
+    }
 }

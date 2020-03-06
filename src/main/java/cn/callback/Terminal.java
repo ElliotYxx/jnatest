@@ -9,6 +9,8 @@ import com.alibaba.fastjson.JSONObject;
 import java.io.*;
 import java.net.Socket;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * @author Sheva
@@ -17,12 +19,13 @@ import java.sql.Timestamp;
  * 终端设备
  */
 public class Terminal extends Thread {
-    private Boolean flag = true;
     private InputStreamReader isr;
     private BufferedReader br;
     private OutputStreamWriter osw;
     private BufferedWriter bw;
     private Socket socket;
+
+    private SimpleDateFormat format = new SimpleDateFormat("YYYY-mm-dd HH:mm:ss:SSSS");
 
     /**
      * 解码请求
@@ -53,27 +56,20 @@ public class Terminal extends Thread {
                 br = new BufferedReader(isr);
                 String str = br.readLine();
                 JSONObject object = JSONObject.parseObject(str);
-                System.out.println(str);
-
-                System.out.println("终端接收到的读卡命令参数：");
+                System.out.println("终端接收到的读卡命令参数： \n" + str);
                 //获取传递过来的参数
                 String sn = object.getString("sn");
                 String timestamp = object.getString("timestamp");
-                String trans_code = object.getJSONObject("body").getString("trans_code");
                 int seq = object.getJSONObject("body").getInteger("seq");
-                System.out.println("sn: " + sn + "  timestamp: " + timestamp + "  tans_code: " + trans_code + "  seq: " + seq);
                 Request cardInfoReq = new Request();
                 RequestBody body=new RequestBody();
                 body.setSeq(seq+1);
                 cardInfoReq.setSn(sn);
-//                cardInfoReq.getBody().setSeq(seq + 1);
                 cardInfoReq.setTimestamp(timestamp);
-                System.out.println("此次接收到的命令是：　" + object.getJSONObject("body").getString("rsp_data"));
                 if (("80B0000020").equals(object.getJSONObject("body").getString("rsp_data"))){
                     System.out.println("开始设置身份证数据....");
                     body.setReq_data(Constants.CARD_INFO_TEST);
                     i++;
-                    //flag = false;
                 }else{
                     body.setReq_data("9000");
                     i++;
@@ -121,12 +117,7 @@ public class Terminal extends Thread {
                 JSONObject object = JSONObject.parseObject(str);
                 System.out.println(str);
                 //获取传输的数据
-                System.out.println("终端获取的最终结果： ");
-                System.out.println("sn: " + object.getString("sn"));
-                System.out.println("trans_code: " + object.getJSONObject("body").getString("trans_code"));
-                System.out.println("timestamp: " + object.getString("timestamp"));
-                System.out.println("seq: " + object.getJSONObject("body").getString("seq"));
-                System.out.println("result: " + object.getJSONObject("body").getString("rsp_data"));
+                System.out.println("终端获取的最终结果： \n" + str + "\n");
             }catch (Exception e){
                 System.out.println("接收结果失败...");
                 e.printStackTrace();
@@ -148,7 +139,7 @@ public class Terminal extends Thread {
                 //注入sn
                 decodeRequest.setSn("123456789");
                 //注入时间戳
-                decodeRequest.setTimestamp(new Timestamp(System.currentTimeMillis()).toString());
+                decodeRequest.setTimestamp(format.format(new Date()));
                 //注入业务类型
                 RequestBody body=new RequestBody();
                 body.setReq_data("解码请求");
@@ -169,10 +160,6 @@ public class Terminal extends Thread {
         }
     }
 
-    public static void main(String[] args) {
-        Terminal terminal = new Terminal("127.0.0.1", 1234);
-        terminal.start();
-    }
 
 }
 

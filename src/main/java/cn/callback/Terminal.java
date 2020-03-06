@@ -63,7 +63,7 @@ public class Terminal extends Thread {
                 int seq = object.getJSONObject("body").getInteger("seq");
                 Request cardInfoReq = new Request();
                 RequestBody body=new RequestBody();
-                body.setSeq(seq+1);
+                body.setSeq(seq + 1);
                 cardInfoReq.setSn(sn);
                 cardInfoReq.setTimestamp(timestamp);
                 if (("80B0000020").equals(object.getJSONObject("body").getString("rsp_data"))){

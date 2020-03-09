@@ -140,7 +140,7 @@ public class ClientService extends Thread {
                     System.out.println("开始发送结果...");
                     resultResp.setBody(body);
                     new SendRespThread(resultResp).start();
-                    socket.close();
+                    //socket.close();
                 }else{
                     //发送reqID给查询服务
                     new SendReqIDThread(reqID).start();
@@ -156,9 +156,11 @@ public class ClientService extends Thread {
 
 
                     new SendRespThread(response).start();
-                    Thread.sleep(40000);
-                    socket.close();
+                    //Thread.sleep(40000);
+                    //socket.close();
                 }
+                Thread.sleep(5000);
+                socket.close();
 
             }else{
                 System.out.println("解码请求错误...");

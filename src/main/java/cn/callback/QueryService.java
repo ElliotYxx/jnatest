@@ -1,6 +1,10 @@
 package cn.callback;
 
+import cn.callback.constant.Constants;
+import cn.callback.pojo.Response;
+import cn.callback.pojo.ResponseBody;
 import cn.callback.service.JLRC;
+import com.alibaba.fastjson.JSON;
 import sun.misc.BASE64Encoder;
 
 import java.io.*;
@@ -26,12 +30,17 @@ public class QueryService extends Thread{
     ServerSocket serverSocket;
     private DataInputStream in;
 
+    private Response sendInfoResp = new Response();
+
+    private OutputStreamWriter osw;
+    private BufferedWriter bw;
+
 
     public QueryService(int port)
     {
        try{
            serverSocket = new ServerSocket(port);
-           serverSocket.setSoTimeout(1000000);
+           serverSocket.setSoTimeout(1000000000);
        }catch (Exception e)
        {
            e.printStackTrace();
@@ -49,10 +58,6 @@ public class QueryService extends Thread{
             in = new DataInputStream(socket.getInputStream());
             byte[] reqID = new byte[35];
             in.read(reqID);
-            System.out.println("接收到的reqID: " );
-            for (int i = 0; i < reqID.length; i++) {
-                System.out.println((char)reqID[i]);
-            }
 
             //把reqid发送给getinfo处理
             int ret = JLRC.INSTANCE.getInfo(cid, app_id, appKey, reqID, "jWEeQkfogZSJvrS2iDZ".getBytes(), info,
@@ -65,16 +70,45 @@ public class QueryService extends Thread{
             String infoStr = enc.encode(info);
             String picStr = enc.encode(picture);
             System.out.println("ret: " + ret);
-            System.out.println("errMsg： " + errStr);
-            System.out.println("dn: " + dnStr);
-            System.out.println("appeidcode: " + appeidcodeStr);
-            System.out.println("info: " + infoStr);
-            System.out.println("picture: " + picStr);
-            in.close();
-            socket.close();
+            if (ret > 0){
+                sendInfoResp.setRsp_code(Integer.valueOf(ret).toString());
+            }else{
+                sendInfoResp.setRsp_code(Integer.valueOf(ret).toString());
+                sendInfoResp.setRsp_msg(errStr);
+            }
+            ResponseBody body = new ResponseBody();
+            body.setRsp_data(infoStr);
+            body.setTrans_code(Constants.RESULT_CODE);
+            sendInfoResp.setBody(body);
+            new SendInfoThread(sendInfoResp).start();
+
+//            in.close();
+//            socket.close();
         }catch (Exception e)
         {
             e.printStackTrace();
+        }
+    }
+    class  SendInfoThread extends Thread{
+        private Response response;
+        SendInfoThread(Response response){
+            this.response = response;
+        }
+        @Override
+        public void run() {
+            try{
+                osw = new OutputStreamWriter(socket.getOutputStream());
+                bw = new BufferedWriter(osw);
+                //类型转换
+                System.out.println(socket.isConnected());
+                String data = JSON.toJSONString(response);
+                //System.out.println("发送的result data： " + data);
+                bw.write(data + "\n");
+                bw.flush();
+            }catch (Exception e){
+                System.out.println("发送命令错误....");
+                e.printStackTrace();
+            }
         }
     }
 }

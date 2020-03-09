@@ -32,6 +32,8 @@ public class ClientService extends Thread {
 
     private Socket socket;
     private ServerSocket serverSocket;
+
+    private Socket socketQuery;
     /**
      * 读卡请求
      */
@@ -49,6 +51,8 @@ public class ClientService extends Thread {
         try{
             serverSocket = new ServerSocket(port);
             serverSocket.setSoTimeout(100000000);
+            socketQuery=new Socket("127.0.0.11",2345);
+            socketQuery.setSoTimeout(500000000);
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -77,7 +81,6 @@ public class ClientService extends Thread {
             final String timestamp = object.getString("timestamp");
             String trans_code = object.getJSONObject("body").getString("trans_code");
             int seq = object.getJSONObject("body").getInteger("seq");
-            //System.out.println("平台接收解码请求{sn: " + sn + "  timestamp: " + timestamp + "  trans_code: " + trans_code + "  seq: " + seq + "}");
             final ResponseBody body = new ResponseBody();
             readCardResp.setSn(sn);
             readCardResp.setTimestamp(timestamp);
@@ -92,7 +95,6 @@ public class ClientService extends Thread {
                             public String readCard(String fid, String tidid, String resp) {
                                 //设置读卡命令
                                 //System.out.println("此次生成的读卡命令为：　" + resp);
-
                                 body.setRsp_data(resp);
                                 body.setTrans_code(Constants.PLAT_TER);
                                 readCardResp.setBody(body);
@@ -138,22 +140,26 @@ public class ClientService extends Thread {
                     System.out.println("开始发送结果...");
                     resultResp.setBody(body);
                     new SendRespThread(resultResp).start();
+                    socket.close();
                 }else{
-                    resultResp.setRsp_code("1");
-                    body.setTrans_code(Constants.RESULT_CODE);
-                    body.setRsp_data(String.valueOf(result));
-                    System.out.println("开始发送结果...");
-                    resultResp.setBody(body);
-                    new SendRespThread(resultResp).start();
-                }
-                body.setRsp_data(String.valueOf(result));
+                    //发送reqID给查询服务
+                    new SendReqIDThread(reqID).start();
+                    //返回身份证信息结果给平台
+                    isr = new InputStreamReader(socketQuery.getInputStream());
+                    br = new BufferedReader(isr);
+                    //接收数据
+                    Thread.sleep(1000);
 
-                //到这一步reqID已经有数据,接下来发送reqID给QuerySerivce, 在queryService中调用getInfo的so库完成结果的返回
-                System.out.println("reqID: ");
-                for (int i = 0; i < reqID.length; i++) {
-                    System.out.println((char) reqID[i]);
+                    String infoStr = br.readLine();
+                    System.out.println("接收到的查询结果为： " + infoStr);
+                    Response response = JSON.parseObject(infoStr, Response.class);
+
+
+                    new SendRespThread(response).start();
+                    Thread.sleep(40000);
+                    socket.close();
                 }
-                new SendReqIDThread(reqID).start();
+
             }else{
                 System.out.println("解码请求错误...");
             }
@@ -172,17 +178,15 @@ public class ClientService extends Thread {
         public void run() {
             Socket socket = null;
             try {
-                socket=new Socket("127.0.0.11",2345);
-                socket.setSoTimeout(5000);
-                dos = new DataOutputStream(socket.getOutputStream());
+                dos = new DataOutputStream(socketQuery.getOutputStream());
                 System.out.println("向服务端发送reqID...");
                 dos.write(reqID);
                 dos.flush();
-                osw.close();
-                bw.close();
-                isr.close();
-                br.close();
-                socket.close();
+//                osw.close();
+//                bw.close();
+//                isr.close();
+//                br.close();
+//                socket.close();
             }catch (Exception e)
             {
                 e.printStackTrace();
@@ -202,7 +206,7 @@ public class ClientService extends Thread {
                 //类型转换
                 String data = JSON.toJSONString(response);
                 System.out.println("发送给终端读卡命令的时间： " + formatter.format(new Date()));
-                System.out.println("此次发送的命令为： " + response.getBody().getRsp_data());
+                //System.out.println("此次发送的命令为： " + response.getBody().getRsp_data());
                 bw.write(data + "\n");
                 bw.flush();
             }catch (Exception e){

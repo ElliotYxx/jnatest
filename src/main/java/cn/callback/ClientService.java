@@ -148,16 +148,12 @@ public class ClientService extends Thread {
                     isr = new InputStreamReader(socketQuery.getInputStream());
                     br = new BufferedReader(isr);
                     //接收数据
-                    Thread.sleep(1000);
+                    Thread.sleep(2000);
 
                     String infoStr = br.readLine();
                     System.out.println("接收到的查询结果为： " + infoStr);
                     Response response = JSON.parseObject(infoStr, Response.class);
-
-
                     new SendRespThread(response).start();
-                    //Thread.sleep(40000);
-                    //socket.close();
                 }
                 Thread.sleep(5000);
                 socket.close();

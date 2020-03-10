@@ -10,9 +10,9 @@ public class Run {
     public static void main(String[] args) {
         QueryService queryService = new QueryService(2345);
         ClientService clientService = new ClientService(1234);
-//        Terminal terminal = new Terminal("127.0.0.1", 1234);
+        Terminal terminal = new Terminal("127.0.0.1", 1234);
         queryService.start();
         clientService.start();
-        //terminal.start();
+        terminal.start();
     }
 }

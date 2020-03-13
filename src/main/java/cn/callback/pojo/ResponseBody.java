@@ -27,6 +27,11 @@ public class ResponseBody {
      * 传输的文件内容（调用so库的响应信息）
      */
     private String rsp_data;
+
+    /**
+     * 身份证图片信息
+     */
+    private String picture;
     /**
      * 指令序列，初始值为1， 每次请求提交到平台值加1
      */

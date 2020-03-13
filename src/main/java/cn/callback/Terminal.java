@@ -35,23 +35,23 @@ public class Terminal extends Thread {
     /**
      * 构造方法配置端口与ip
      */
-    public Terminal(String host, int port){
-        try{
+    public Terminal(String host, int port) {
+        try {
             socket = new Socket(host, port);
             socket.setSoTimeout(5000);
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     @Override
     public void run() {
-        try{
+        try {
             //发送解码请求
             new SendDecodeThread().start();
             //接收平台传过来的数据
             int i = 0;
-            while(i < 5){
+            while (i < 5) {
                 isr = new InputStreamReader(socket.getInputStream());
                 br = new BufferedReader(isr);
                 String str = br.readLine();
@@ -62,15 +62,15 @@ public class Terminal extends Thread {
                 String timestamp = object.getString("timestamp");
                 int seq = object.getJSONObject("body").getInteger("seq");
                 Request cardInfoReq = new Request();
-                RequestBody body=new RequestBody();
+                RequestBody body = new RequestBody();
                 body.setSeq(seq + 1);
                 cardInfoReq.setSn(sn);
                 cardInfoReq.setTimestamp(timestamp);
-                if (("80B0000020").equals(object.getJSONObject("body").getString("rsp_data"))){
+                if (("80B0000020").equals(object.getJSONObject("body").getString("rsp_data"))) {
                     System.out.println("开始设置身份证数据....");
                     body.setReq_data(Constants.CARD_INFO_TEST);
                     i++;
-                }else{
+                } else {
                     body.setReq_data("9000");
                     i++;
                 }
@@ -81,44 +81,44 @@ public class Terminal extends Thread {
 
             new GetResultThread().start();
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    class SendReqThread extends Thread{
+    class SendReqThread extends Thread {
         private Request request;
-        SendReqThread(Request request){
+
+        SendReqThread(Request request) {
             this.request = request;
         }
+
         @Override
         public void run() {
-            try{
+            try {
                 String data = JSON.toJSONString(request);
                 bw.write(data + "\n");
                 bw.flush();
 
-            }catch (Exception e){
+            } catch (Exception e) {
                 System.out.println("发送身份证信息错误...");
                 e.printStackTrace();
             }
         }
     }
 
-    class GetResultThread extends Thread{
+    class GetResultThread extends Thread {
         @Override
         public void run() {
-            try{
+            try {
                 isr = new InputStreamReader(socket.getInputStream());
                 br = new BufferedReader(isr);
                 //平台结果返回
                 Thread.sleep(5000);
                 String str = br.readLine();
-                JSONObject object = JSONObject.parseObject(str);
-                System.out.println(str);
                 //获取传输的数据
                 System.out.println("终端获取的最终结果： \n" + str + "\n");
-            }catch (Exception e){
+            } catch (Exception e) {
                 System.out.println("接收结果失败...");
                 e.printStackTrace();
             }
@@ -129,10 +129,10 @@ public class Terminal extends Thread {
     /**
      * 发送解码请求的线程
      */
-    class SendDecodeThread extends Thread{
+    class SendDecodeThread extends Thread {
         @Override
         public void run() {
-            try{
+            try {
                 osw = new OutputStreamWriter(socket.getOutputStream());
                 bw = new BufferedWriter(osw);
                 System.out.println("终端发送解码请求...");
@@ -141,23 +141,24 @@ public class Terminal extends Thread {
                 //注入时间戳
                 decodeRequest.setTimestamp(format.format(new Date()));
                 //注入业务类型
-                RequestBody body=new RequestBody();
+                RequestBody body = new RequestBody();
                 body.setReq_data("解码请求");
                 body.setSeq(1);
                 body.setTrans_code(Constants.DECODE_REQ);
                 decodeRequest.setBody(body);
-//                decodeRequest.getBody().setTrans_code(Constants.DECODE_REQ);
-//                //注入指令序列
-//                decodeRequest.getBody().setSeq(1);
-//                decodeRequest.getBody().setReq_data("解码请求");
                 String data = JSON.toJSONString(decodeRequest);
                 bw.write(data + "\n");
                 bw.flush();
-            }catch (Exception e){
+            } catch (Exception e) {
                 System.out.println("发送解码请求出错...");
                 e.printStackTrace();
             }
         }
+    }
+
+    public static void main(String[] args) {
+        Terminal terminal = new Terminal("127.0.0.1", 1234);
+        terminal.start();
     }
 
 
